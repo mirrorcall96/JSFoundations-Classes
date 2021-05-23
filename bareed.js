@@ -43,11 +43,13 @@ class Point {
  **********************************************************/
 class Wallet {
   // implement Wallet!
-  constructor(money = 0) {}
+  constructor(money = 0) {
+    this.money=money;
+  }
 
-  credit = amount => {};
+  credit = amount => {this.money+=amount;};
 
-  debit = amount => {};
+  debit = amount => {this.money-=amount;};
 }
 
 /**********************************************************
@@ -62,6 +64,12 @@ class Wallet {
  * let person = new Person(name, x, y);
  **********************************************************/
 class Person {
+  constructor(name,x,y,wallet=0){
+    this.name=name;
+    this.location=new Point(x,y);
+    this.wallet= new Wallet(wallet);
+  }
+  moveTo = point => {this.location=point;}
   // implement Person!
 }
 
@@ -80,8 +88,19 @@ class Person {
  *
  * new vendor = new Vendor(name, x, y);
  **********************************************************/
-class Vendor {
+class Vendor extends Person {
   // implement Vendor!
+  constructor(name,x,y,wallet,range=5,price=1){
+    super(name,x,y,wallet);
+    this.range=range;
+    this.price=price;
+  }
+  sellTo = (customer, numberOfIceCreams)=>{
+    this.location=customer.location;
+    this.wallet.money+=numberOfIceCreams*this.price;
+    customer.wallet.money-=numberOfIceCreams*this.price;
+  }
+
 }
 
 /**********************************************************
@@ -100,9 +119,57 @@ class Vendor {
  *
  * new customer = new Customer(name, x, y);
  **********************************************************/
-class Customer {
+class Customer extends Person {
   // implement Customer!
+  constructor(name,x,y,wallet= 10){
+    super(name,x,y,wallet);
+    this._isInRange = vendor =>{
+      if (this.location.distanceTo(vendor.location) <= vendor.range){
+        return true;
+      }
+      else return false;
+    }
+    this._haveEnoughMoney=(vendor, numberOfIceCreams)=>{
+      if (this.wallet.money >= numberOfIceCreams*vendor.price) return true;
+      else return false;
+    }
+    this.requestIceCream = (vendor, numberOfIceCreams) =>{
+      if (this._haveEnoughMoney(vendor, numberOfIceCreams) & this._isInRange(vendor)){
+        vendor.sellTo(this,numberOfIceCreams);
+      }
+    }
+
+  }
+
 }
+let vendorAsis = new Vendor("Asis", 10, 10); // create a new vendor named Asis at location (10,10)
+let nearbyCustomer = new Customer("MishMish", 11, 11); // create a new customer named MishMish at location (11,11)
+let distantCustomer = new Customer("Hamsa", 1000, 1000); // create a new customer named Hamsa at location (1000,1000)
+let brokeCustomer = new Customer("Maskeen", 12, 12); // create a new customer named Maskeen at location (12,12)
+brokeCustomer.wallet.money = 0; // steal all of Maskeen's money
+
+nearbyCustomer.requestIceCream(vendorAsis, 10); // ask to buy 10 ice creams from Asis
+// money was transferred from MishMish to Asis
+nearbyCustomer.wallet.money; // 0 left
+vendorAsis.wallet.money; // 10
+// Asis moved to MishMish's location
+vendorAsis.location; // { x: 11, y: 11 }
+
+distantCustomer.requestIceCream(vendorAsis, 10); // ask to buy 10 ice creams from Asis
+// no money was transferred because the request failed - Hamsa is too far away
+distantCustomer.wallet.money; // 10 left
+vendorAsis.wallet.money; // still only 10
+// Asis didn't move
+vendorAsis.location; // { x: 11, y: 11 }
+
+brokeCustomer.requestIceCream(vendorAsis, 1); // ask to buy 1 ice creams from Asis
+// no money was transferred because the request failed - Maskeen doesn't have enough money to buy even one ice cream :(
+brokeCustomer.wallet.money; // 0
+vendorAsis.wallet.money; // still only 10
+// Asis didn't move
+vendorAsis.location; // { x: 11, y: 11 }
+
+
 
 export { Point, Wallet, Person, Customer, Vendor };
 
